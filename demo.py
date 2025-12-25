@@ -1,6 +1,8 @@
 from core.game import Game
 from entities.player import Player
-from entities.weapon import Gun
+from entities.weapons.gun import Gun
+from entities.weapons.gun_library import GLOCK_17
+from entities.weapons.gun_library import AR_15
 
 
 if __name__ == "__main__":
@@ -9,8 +11,8 @@ if __name__ == "__main__":
     hunter = Player("Hunter 1", "hunter", game)
     prop = Player("Prop 1", "prop", game)
 
-    glock = Gun("Glock 17")
-    ar15 = Gun("AR-15")
+    glock = Gun(GLOCK_17)
+    ar15 = Gun(AR_15)
 
     hunter.attempt_pickup_weapon(glock)
     hunter.attempt_use_weapon()

@@ -1,6 +1,6 @@
 from core.game import Game
 from entities.player import Player
-from entities.weapon import Gun
+from entities.weapons.weapon import Gun
 
 
 if __name__ == "__main__":
