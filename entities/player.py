@@ -1,6 +1,9 @@
-from typing import Optional, Dict
+from typing import Optional, Dict, TYPE_CHECKING
 from core.status import Status
-from entities.weapon import Weapon
+from entities.weapons.weapon import Weapon
+
+if TYPE_CHECKING:
+    from core.game import Game
 
 
 class Player:
@@ -11,7 +14,6 @@ class Player:
 
         self.position = (0, 0)
         self.direction = (1, 0)
-
         self.loadout: Dict[str, Optional[Weapon]] = {
             "primary": None,
             "secondary": None,
