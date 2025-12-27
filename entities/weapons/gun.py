@@ -12,6 +12,7 @@
 # - Gun never assigns ownership itself.
 
 from __future__ import annotations
+import inspect
 
 from typing import Optional
 
