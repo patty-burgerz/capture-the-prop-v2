@@ -4,6 +4,8 @@ from core.states import LobbyState, PreparingState, PlayingState
 from entities.player import Player
 from entities.weapons.weapon import Weapon
 from entities.weapons.shot_intent import ShotIntent
+from entities.Bullet import Bullet
+from entities.travel_behavior import StraightTravel
 
 
 class Game:
@@ -12,6 +14,8 @@ class Game:
     - Routes player intent (attempt_* methods)
     - Delegates policy decisions to the current GameState
     - Executes irreversible world mutations in *_core methods
+
+    For now, Game also acts as the World (ticks bullets).
     """
 
     def __init__(self):
@@ -28,11 +32,12 @@ class Game:
         # Default state for now
         self.state = self.preparing_state
 
+        # World-simulated entities
+        self.bullets: list[Bullet] = []
+
     # ============================================================
     # Notifications (TEMPORARY / DEBUG-ORIENTED)
     # ============================================================
-    # These will likely evolve into event systems, audio cues,
-    # visibility-filtered messaging, etc.
 
     def notify_all(self, message: str, exclude: Optional[Player] = None):
         for p in self.hunters + self.props + self.guardian_angels:
@@ -69,8 +74,6 @@ class Game:
     # ============================================================
     # ATTEMPT ROUTERS (PLAYER INTENT)
     # ============================================================
-    # Player objects never mutate the world directly.
-    # They express intent; Game + State decide what happens.
 
     def attempt_move(self, player: Player, new_position):
         return self.state.handle_move(player, new_position)
@@ -99,8 +102,6 @@ class Game:
     # ============================================================
     # CORE MECHANICS (WORLD MUTATION)
     # ============================================================
-    # These methods are called ONLY after authorization.
-    # No state checks, no player input here.
 
     def _move_core(self, player: Player, new_position):
         player.position = new_position
@@ -119,7 +120,6 @@ class Game:
             self.notify_player(player, f"{weapon.name} is already owned.")
             return None
 
-        # Drop old weapon in this slot, if any
         old = player.loadout.get(slot_name)
         if old:
             old.owner = None
@@ -131,55 +131,70 @@ class Game:
         return True
 
     # ============================================================
+    # WORLD UPDATE (Game acts as World for now)
+    # ============================================================
+
+    def update(self, dt: float) -> None:
+        for bullet in self.bullets:
+            bullet.update(self, dt)
+
+        # Remove dead bullets safely
+        self.bullets = [b for b in self.bullets if b.alive]
+        print(len(self.bullets))
+
+    # ============================================================
     # WEAPON USE PIPELINE
     # ============================================================
-    # This is the heart of the “intent → execution” architecture.
 
     def _use_equipped_weapon_core(self, player: Player):
         """
-        Generic weapon use entry point.
-        - Asks the equipped weapon to produce a use-result (intent).
-        - Dispatches execution based on the type of result.
+        Ask equipped weapon to produce a use-result (intent),
+        then execute it.
         """
-
         weapon = player.loadout.get(player.current_weapon_slot)
         if not weapon:
             self.notify_player(player, "No weapon equipped in current slot.")
             return None
 
-        # Weapon decides whether it can act and what it produces.
         use_result = weapon.use()
         if use_result is None:
             self.notify_player(player, f"Cannot use {weapon.name} right now.")
             return None
 
-        # Intent-based dispatch (Option 2 – explicit and readable)
         if isinstance(use_result, ShotIntent):
             return self._execute_shot_intent_core(player, use_result)
-
-        # Future:
-        # elif isinstance(use_result, MeleeIntent):
-        #     return self._execute_melee_intent_core(player, use_result)
 
         self.notify_player(player, f"{weapon.name} use is not implemented yet.")
         return None
 
     def _execute_shot_intent_core(self, player: Player, shot_intent: ShotIntent):
         """
-        Convert a ShotIntent into world effects.
-
-        v1:
-        - No bullets yet
-        - No raycasts yet
-        - Just confirms the shot occurred
-
-        Future:
-        - Create Bullet
-        - Resolve travel + impact strategies
-        - Add bullet to world simulation
+        v1 execution:
+        - Spawn a straight-travel bullet
+        - No collision or impact yet
         """
-        self.notify_player(
-            player,
-            f"{player.name} fired {shot_intent.spec.name}!"
+        # Spawn at player's position
+        x, y = player.position
+        dx, dy = player.direction
+
+        speed = float(shot_intent.spec.bullet_speed)
+        vx = dx * speed
+        vy = dy * speed
+
+        bullet = Bullet(
+            x=float(x),
+            y=float(y),
+            vx=float(vx),
+            vy=float(vy),
+            owner_id=player.name,  # replace with player.id later
+            damage=int(shot_intent.spec.damage),
+            ttl=2.0,
+            travel=StraightTravel(),
         )
+
+        self.bullets.append(bullet)
+
+        # Temporary debug output
+        self.notify_player(player, f"Fired {shot_intent.spec.name}")
+
         return True

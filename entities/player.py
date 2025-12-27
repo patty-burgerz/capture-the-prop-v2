@@ -3,7 +3,7 @@ from core.status import Status
 from entities.weapons.weapon import Weapon
 
 if TYPE_CHECKING:
-    from core.game import Game
+    from .core.game import Game
 
 
 class Player:
