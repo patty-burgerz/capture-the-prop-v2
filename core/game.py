@@ -146,23 +146,46 @@ class Game:
     # WEAPON USE PIPELINE
     # ============================================================
 
-    def _use_equipped_weapon_core(self, player: Player):
+    def _get_use_result_or_none(self, player: Player):
         """
-        Ask equipped weapon to produce a use-result (intent),
-        then execute it.
+        Shared front-door for weapon trigger pulls.
+
+        Invariant:
+        - If a use succeeds, weapon.use() is called exactly once here.
+        - Ammo/cooldowns/etc. are weapon-internal and apply regardless of phase.
         """
         weapon = player.loadout.get(player.current_weapon_slot)
         if not weapon:
             self.notify_player(player, "No weapon equipped in current slot.")
-            return None
+            return None, None
 
         use_result = weapon.use()
         if use_result is None:
             self.notify_player(player, f"Cannot use {weapon.name} right now.")
+            return weapon, None
+
+        return weapon, use_result
+
+    def _use_equipped_weapon_live_core(self, player: Player):
+        weapon, use_result = self._get_use_result_or_none(player)
+        if use_result is None:
             return None
 
         if isinstance(use_result, ShotIntent):
             return self._execute_shot_intent_core(player, use_result)
+
+        self.notify_player(player, f"{weapon.name} use is not implemented yet.")
+        return None
+
+    def _use_equipped_weapon_blank_core(self, player: Player):
+        weapon, use_result = self._get_use_result_or_none(player)
+        if use_result is None:
+            return None
+
+        # Blank execution only applies to shots.
+        if isinstance(use_result, ShotIntent):
+            self.notify_player(player, f"{player.name} fired a blank!")
+            return True
 
         self.notify_player(player, f"{weapon.name} use is not implemented yet.")
         return None
@@ -173,7 +196,6 @@ class Game:
         - Spawn a straight-travel bullet
         - No collision or impact yet
         """
-        # Spawn at player's position
         x, y = player.position
         dx, dy = player.direction
 

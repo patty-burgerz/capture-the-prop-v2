@@ -17,11 +17,12 @@ if __name__ == "__main__":
 
     hunter.attempt_pickup_weapon(glock)
     hunter.attempt_use_weapon()
-    game.update(.1)
+    hunter.attempt_use_weapon()
+    #game.update(.1)
 
     #hunter.attempt_switch_slot("secondary")
-    #hunter.attempt_pickup_weapon(ar15)
-    #hunter.attempt_use_weapon()
+    hunter.attempt_pickup_weapon(ar15)
+    hunter.attempt_use_weapon()
 
-    #game.switch_state(game.playing_state)
-    #hunter.attempt_use_weapon()
+    game.switch_state(game.playing_state)
+    hunter.attempt_use_weapon()
