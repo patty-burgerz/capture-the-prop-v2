@@ -56,7 +56,7 @@ class PreparingState(GameState):
         return self.game._switch_slot_core(player, slot_name)
 
     def handle_use_weapon(self, player):
-        return self.game._use_equipped_weapon_core(player)
+        return self.game._use_equipped_weapon_blank_core(player)
 
     def handle_possess(self, player, obj_name):
         self.game.notify_all(f"{player.name} possessed {obj_name} (PREPARING)")
@@ -76,7 +76,7 @@ class PlayingState(GameState):
         return self.game._switch_slot_core(player, slot_name)
 
     def handle_use_weapon(self, player):
-        return self.game._use_equipped_weapon_core(player)
+        return self.game._use_equipped_weapon_live_core(player)
 
     def handle_possess(self, player, obj_name):
         self.game.notify_all(f"{player.name} possessed {obj_name} (PLAYING)")
