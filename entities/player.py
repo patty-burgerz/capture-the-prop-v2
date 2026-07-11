@@ -1,9 +1,10 @@
 from typing import Optional, Dict, TYPE_CHECKING
+
 from core.status import Status
 from entities.weapons.weapon import Weapon
 
 if TYPE_CHECKING:
-    from .core.game import Game
+    from core.game import Game
 
 
 class Player:
@@ -14,15 +15,16 @@ class Player:
 
         self.position = (0, 0)
         self.direction = (1, 0)
+
         self.loadout: Dict[str, Optional[Weapon]] = {
             "primary": None,
             "secondary": None,
             "tertiary": None,
         }
-        self.current_weapon_slot = "primary"
 
+        self.current_weapon_slot = "primary"
         self.status = Status()
-        self.shot_modifiers=[]
+        self.shot_modifiers = []
 
         if role == "hunter":
             self.game.add_hunter(self)
@@ -30,6 +32,22 @@ class Player:
             self.game.add_prop(self)
         elif role == "guardian":
             self.game.add_guardian(self)
+
+    # ---- MODIFIERS-  ----
+
+    def add_shot_modifier(self, modifier):
+        self.shot_modifiers.append(modifier)
+
+    def remove_shot_modifier(self, modifier) -> bool:
+        if modifier not in self.shot_modifiers:
+           return False
+
+        self.shot_modifiers.remove(modifier)
+        return True
+
+    def clear_shot_modifiers(self) -> None:
+        self.shot_modifiers.clear()
+    
 
     # ---- ATTEMPTS (INTENT ONLY) ----
 

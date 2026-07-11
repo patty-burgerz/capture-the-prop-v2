@@ -102,6 +102,14 @@ class Game:
     # ============================================================
     # CORE MECHANICS (WORLD MUTATION)
     # ============================================================
+    
+    def _apply_shot_modifiers(self,player: Player,shot_intent: ShotIntent) -> ShotIntent:
+        modified_shot = shot_intent
+
+        for modifier in player.shot_modifiers:
+            modified_shot = modifier.apply(modified_shot)
+
+        return modified_shot
 
     def _move_core(self, player: Player, new_position):
         player.position = new_position
@@ -172,7 +180,8 @@ class Game:
             return None
 
         if isinstance(use_result, ShotIntent):
-            return self._execute_shot_intent_core(player, use_result)
+            final_shot = self._apply_shot_modifiers(player, use_result)
+            return self._execute_shot_intent_core(player, final_shot)
 
         self.notify_player(player, f"{weapon.name} use is not implemented yet.")
         return None
@@ -209,11 +218,10 @@ class Game:
             vx=float(vx),
             vy=float(vy),
             owner_id=player.name,  # replace with player.id later
-            damage=int(shot_intent.spec.damage),
+            damage=int(shot_intent.damage),
             ttl=2.0,
             travel=StraightTravel(),
         )
-
         self.bullets.append(bullet)
 
         # Temporary debug output
