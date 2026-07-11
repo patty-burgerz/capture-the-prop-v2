@@ -22,6 +22,7 @@ class Player:
         self.current_weapon_slot = "primary"
 
         self.status = Status()
+        self.shot_modifiers=[]
 
         if role == "hunter":
             self.game.add_hunter(self)
