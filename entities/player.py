@@ -2,6 +2,7 @@ from typing import Optional, Dict, TYPE_CHECKING
 
 from core.status import Status
 from entities.weapons.weapon import Weapon
+from entities.effects import ActiveEffects
 
 if TYPE_CHECKING:
     from core.game import Game
@@ -24,7 +25,7 @@ class Player:
 
         self.current_weapon_slot = "primary"
         self.status = Status()
-        self.shot_modifiers = []
+        self.active_effects = ActiveEffects()
 
         if role == "hunter":
             self.game.add_hunter(self)
@@ -33,21 +34,6 @@ class Player:
         elif role == "guardian":
             self.game.add_guardian(self)
 
-    # ---- MODIFIERS-  ----
-
-    def add_shot_modifier(self, modifier):
-        self.shot_modifiers.append(modifier)
-
-    def remove_shot_modifier(self, modifier) -> bool:
-        if modifier not in self.shot_modifiers:
-           return False
-
-        self.shot_modifiers.remove(modifier)
-        return True
-
-    def clear_shot_modifiers(self) -> None:
-        self.shot_modifiers.clear()
-    
 
     # ---- ATTEMPTS (INTENT ONLY) ----
 

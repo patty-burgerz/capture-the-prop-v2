@@ -103,16 +103,10 @@ class Game:
     # CORE MECHANICS (WORLD MUTATION)
     # ============================================================
     
-    def _apply_shot_modifiers(self,player: Player,shot_intent: ShotIntent) -> ShotIntent:
-        modified_shot = shot_intent
-
-        for modifier in player.shot_modifiers:
-            modified_shot = modifier.apply(modified_shot)
-
-        return modified_shot
-
     def _move_core(self, player: Player, new_position):
-        player.position = new_position
+        # Apply active movement effect to the new position.
+        final_position = player.active_effects.modify_movement(new_position)
+        player.position = final_position
         return True
 
     def _switch_slot_core(self, player: Player, slot_name: str):
@@ -180,7 +174,8 @@ class Game:
             return None
 
         if isinstance(use_result, ShotIntent):
-            final_shot = self._apply_shot_modifiers(player, use_result)
+            # Apply active shot effect before creating the bullet.
+            final_shot = player.active_effects.modify_shot(use_result)
             return self._execute_shot_intent_core(player, final_shot)
 
         self.notify_player(player, f"{weapon.name} use is not implemented yet.")
@@ -208,7 +203,7 @@ class Game:
         x, y = player.position
         dx, dy = player.direction
 
-        speed = float(shot_intent.spec.bullet_speed)
+        speed = float(shot_intent.bullet_speed)
         vx = dx * speed
         vy = dy * speed
 
