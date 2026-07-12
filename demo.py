@@ -7,7 +7,6 @@ from entities.weapons.gun_library import AR_15
 from entities.weapons.shot_modifiers import DoubleDamageModifier
 
 if __name__ == "__main__":
-    print("Hello from demo.py!")
 
     game = Game()
 
