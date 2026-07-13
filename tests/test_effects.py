@@ -215,7 +215,7 @@ class TestActiveEffectIntegration(unittest.TestCase):
         # Fire without effect
         self.player.attempt_use_weapon()
         self.assertEqual(len(self.game.bullets), 1)
-        self.assertEqual(self.game.bullets[0].damage, 25)  # AR_15 base damage
+        self.assertEqual(self.game.bullets[0].damage, AR_15.damage)  # AR_15 base damage
     
     def test_double_damage_effect_doubles_bullet_damage(self):
         """With double-damage shot effect, bullet damage is doubled."""
@@ -228,7 +228,7 @@ class TestActiveEffectIntegration(unittest.TestCase):
         # Fire with effect
         self.player.attempt_use_weapon()
         self.assertEqual(len(self.game.bullets), 1)
-        self.assertEqual(self.game.bullets[0].damage, 50)  # 25 * 2
+        self.assertEqual(self.game.bullets[0].damage, AR_15.damage * 2)
     
     def test_replacing_shot_effect(self):
         """Replacing a shot effect replaces behavior."""
@@ -246,8 +246,8 @@ class TestActiveEffectIntegration(unittest.TestCase):
         self.player.attempt_use_weapon()
         second_damage = self.game.bullets[0].damage
         
-        self.assertEqual(first_damage, 50)
-        self.assertEqual(second_damage, 25)
+        self.assertEqual(first_damage, AR_15.damage * 2)
+        self.assertEqual(second_damage, AR_15.damage)
     
     def test_no_movement_effect_original_position(self):
         """With no movement effect, movement works as before."""
@@ -285,7 +285,7 @@ class TestActiveEffectIntegration(unittest.TestCase):
         # Fire a shot
         self.player.attempt_use_weapon()
         self.assertEqual(len(self.game.bullets), 1)
-        self.assertEqual(self.game.bullets[0].damage, 25)  # Original damage
+        self.assertEqual(self.game.bullets[0].damage, AR_15.damage)  # Original damage
     
     def test_both_effects_work_independently(self):
         """Shot and movement effects work independently."""
@@ -302,7 +302,7 @@ class TestActiveEffectIntegration(unittest.TestCase):
         self.player.attempt_move((10, 20))
         
         # Verify both applied
-        self.assertEqual(self.game.bullets[0].damage, 50)  # Double damage
+        self.assertEqual(self.game.bullets[0].damage, AR_15.damage * 2)  # Double damage
         self.assertEqual(self.player.position, (20, 40))  # Speed boost
 
 

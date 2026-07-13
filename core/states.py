@@ -21,10 +21,10 @@ class GameState:
     def handle_possess(self, player: Player, obj_name: str):
         raise NotImplementedError
 
-    def handle_set_shot_effect(self, player, effect):
+    def handle_set_shot_effect(self, player: Player, effect):
         raise NotImplementedError
 
-    def handle_set_movement_effect(self, player, effect):
+    def handle_set_movement_effect(self, player: Player, effect):
         raise NotImplementedError
 
 
@@ -49,11 +49,11 @@ class LobbyState(GameState):
         return False
 
     def handle_set_shot_effect(self, player, effect):
-        self.game.notify_player(player, "Can't set shot effects in the lobby.")
+        self.game.notify_player(player, "Can't assign shot effects in the lobby.")
         return False
 
     def handle_set_movement_effect(self, player, effect):
-        self.game.notify_player(player, "Can't set movement effects in the lobby.")
+        self.game.notify_player(player, "Can't assign movement effects in the lobby.")
         return False
 
 
@@ -77,11 +77,11 @@ class PreparingState(GameState):
         return True
 
     def handle_set_shot_effect(self, player, effect):
-        self.game.notify_player(player, "Can't set shot effects while preparing.")
+        self.game.notify_player(player, "Can't assign shot effects while preparing.")
         return False
 
     def handle_set_movement_effect(self, player, effect):
-        self.game.notify_player(player, "Can't set movement effects while preparing.")
+        self.game.notify_player(player, "Can't assign movement effects while preparing.")
         return False
 
 
