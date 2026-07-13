@@ -1,11 +1,17 @@
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
+from core.action_router import ActionRouter
+from core.effect_controller import EffectController
 from core.states import LobbyState, PreparingState, PlayingState
+from core.weapon_controller import WeaponController
+from core.world_controller import WorldController
 from entities.player import Player
 from entities.weapons.weapon import Weapon
 from entities.weapons.shot_intent import ShotIntent
 from entities.Bullet import Bullet
-from entities.travel_behavior import StraightTravel
+
+if TYPE_CHECKING:
+    from entities.effects.active_effect import ActiveEffect
 
 
 class Game:
@@ -34,6 +40,11 @@ class Game:
 
         # World-simulated entities
         self.bullets: list[Bullet] = []
+
+        self.actions = ActionRouter(self)
+        self.effects = EffectController(self)
+        self.weapons = WeaponController(self)
+        self.world = WorldController(self)
 
     # ============================================================
     # Notifications (TEMPORARY / DEBUG-ORIENTED)
@@ -76,28 +87,25 @@ class Game:
     # ============================================================
 
     def attempt_move(self, player: Player, new_position):
-        return self.state.handle_move(player, new_position)
+        return self.actions.attempt_move(player, new_position)
 
     def attempt_pickup_weapon(self, player: Player, weapon: Weapon):
-        if player.status.blocks("pickup_weapon"):
-            self.notify_player(player, "Denied: you can't pick up weapons right now.")
-            return None
-        return self.state.handle_pickup_weapon(player, weapon)
+        return self.actions.attempt_pickup_weapon(player, weapon)
 
     def attempt_switch_slot(self, player: Player, slot_name: str):
-        if player.status.blocks("switch_slot"):
-            self.notify_player(player, "Denied: you can't switch weapons right now.")
-            return None
-        return self.state.handle_switch_slot(player, slot_name)
+        return self.actions.attempt_switch_slot(player, slot_name)
 
     def attempt_use_weapon(self, player: Player):
-        if player.status.blocks("use_weapon"):
-            self.notify_player(player, "Denied: you can't use weapons right now.")
-            return None
-        return self.state.handle_use_weapon(player)
+        return self.actions.attempt_use_weapon(player)
 
     def attempt_possess(self, player: Player, obj_name: str):
-        return self.state.handle_possess(player, obj_name)
+        return self.actions.attempt_possess(player, obj_name)
+
+    def attempt_set_shot_effect(self, player: Player, effect: "ActiveEffect"):
+        return self.actions.attempt_set_shot_effect(player, effect)
+
+    def attempt_set_movement_effect(self, player: Player, effect: "ActiveEffect"):
+        return self.actions.attempt_set_movement_effect(player, effect)
 
     def attempt_set_shot_effect(self, player: Player, effect):
         return self.state.handle_set_shot_effect(player, effect)
@@ -110,18 +118,10 @@ class Game:
     # ============================================================
     
     def _move_core(self, player: Player, new_position):
-        # Apply active movement effect to the new position.
-        final_position = player.active_effects.modify_movement(new_position)
-        player.position = final_position
-        return True
+        return self.actions.move_core(player, new_position)
 
     def _switch_slot_core(self, player: Player, slot_name: str):
-        if slot_name not in player.loadout:
-            self.notify_player(player, f"Invalid slot: {slot_name}")
-            return None
-        player.current_weapon_slot = slot_name
-        self.notify_player(player, f"Switched to {slot_name}")
-        return True
+        return self.weapons.switch_slot(player, slot_name)
 
     def _set_shot_effect_core(self, player: Player, effect) -> None:
         player.active_effects.set_shot_effect(effect)
@@ -130,108 +130,33 @@ class Game:
         player.active_effects.set_movement_effect(effect)
 
     def _pickup_weapon_into_slot_core(self, player: Player, weapon: Weapon, slot_name: str):
-        if weapon.owner is not None:
-            self.notify_player(player, f"{weapon.name} is already owned.")
-            return None
-
-        old = player.loadout.get(slot_name)
-        if old:
-            old.owner = None
-            self.notify_all(f"{player.name} dropped {old.name}.")
-
-        weapon.owner = player
-        player.loadout[slot_name] = weapon
-        self.notify_all(f"{player.name} picked up {weapon.name} into {slot_name}.")
-        return True
+        return self.weapons.pickup_into_slot(player, weapon, slot_name)
 
     # ============================================================
     # WORLD UPDATE (Game acts as World for now)
     # ============================================================
 
     def update(self, dt: float) -> None:
-        for bullet in self.bullets:
-            bullet.update(self, dt)
-
-        # Remove dead bullets safely
-        self.bullets = [b for b in self.bullets if b.alive]
-        print(len(self.bullets))
+        self.world.update(dt)
 
     # ============================================================
     # WEAPON USE PIPELINE
     # ============================================================
 
     def _get_use_result_or_none(self, player: Player):
-        """
-        Shared front-door for weapon trigger pulls.
-
-        Invariant:
-        - If a use succeeds, weapon.use() is called exactly once here.
-        - Ammo/cooldowns/etc. are weapon-internal and apply regardless of phase.
-        """
-        weapon = player.loadout.get(player.current_weapon_slot)
-        if not weapon:
-            self.notify_player(player, "No weapon equipped in current slot.")
-            return None, None
-
-        use_result = weapon.use()
-        if use_result is None:
-            self.notify_player(player, f"Cannot use {weapon.name} right now.")
-            return weapon, None
-
-        return weapon, use_result
+        return self.weapons.get_use_result_or_none(player)
 
     def _use_equipped_weapon_live_core(self, player: Player):
-        weapon, use_result = self._get_use_result_or_none(player)
-        if use_result is None:
-            return None
-
-        if isinstance(use_result, ShotIntent):
-            # Apply active shot effect before creating the bullet.
-            final_shot = player.active_effects.modify_shot(use_result)
-            return self._execute_shot_intent_core(player, final_shot)
-
-        self.notify_player(player, f"{weapon.name} use is not implemented yet.")
-        return None
+        return self.weapons.use_equipped_live(player)
 
     def _use_equipped_weapon_blank_core(self, player: Player):
-        weapon, use_result = self._get_use_result_or_none(player)
-        if use_result is None:
-            return None
-
-        # Blank execution only applies to shots.
-        if isinstance(use_result, ShotIntent):
-            self.notify_player(player, f"{player.name} fired a blank!")
-            return True
-
-        self.notify_player(player, f"{weapon.name} use is not implemented yet.")
-        return None
+        return self.weapons.use_equipped_blank(player)
 
     def _execute_shot_intent_core(self, player: Player, shot_intent: ShotIntent):
-        """
-        v1 execution:
-        - Spawn a straight-travel bullet
-        - No collision or impact yet
-        """
-        x, y = player.position
-        dx, dy = player.direction
+        return self.weapons.execute_shot_intent(player, shot_intent)
 
-        speed = float(shot_intent.bullet_speed)
-        vx = dx * speed
-        vy = dy * speed
+    def _set_shot_effect_core(self, player: Player, effect: "ActiveEffect"):
+        return self.effects.set_shot_effect(player, effect)
 
-        bullet = Bullet(
-            x=float(x),
-            y=float(y),
-            vx=float(vx),
-            vy=float(vy),
-            owner_id=player.name,  # replace with player.id later
-            damage=int(shot_intent.damage),
-            ttl=2.0,
-            travel=StraightTravel(),
-        )
-        self.bullets.append(bullet)
-
-        # Temporary debug output
-        self.notify_player(player, f"Fired {shot_intent.spec.name}")
-
-        return True
+    def _set_movement_effect_core(self, player: Player, effect: "ActiveEffect"):
+        return self.effects.set_movement_effect(player, effect)
