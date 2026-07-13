@@ -13,8 +13,6 @@ class EffectController:
 
     def set_shot_effect(self, player, effect: Optional["ActiveEffect"]):
         player.active_effects.set_shot_effect(effect)
-        return True
 
     def set_movement_effect(self, player, effect: Optional["ActiveEffect"]):
         player.active_effects.set_movement_effect(effect)
-        return True

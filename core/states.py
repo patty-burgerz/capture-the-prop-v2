@@ -21,7 +21,6 @@ class GameState:
     def handle_possess(self, player: Player, obj_name: str):
         raise NotImplementedError
 
-<<<<<<< HEAD
     def handle_set_shot_effect(self, player: Player, effect):
         raise NotImplementedError
 

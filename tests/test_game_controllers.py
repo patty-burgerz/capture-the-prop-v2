@@ -36,8 +36,8 @@ class TestGameControllerRefactor(unittest.TestCase):
         shot_effect = DoubleDamageEffect()
         movement_effect = SpeedBoostEffect(speed_multiplier=2.0)
 
-        self.assertTrue(player.attempt_set_shot_effect(shot_effect))
-        self.assertTrue(player.attempt_set_movement_effect(movement_effect))
+        self.assertIsNone(player.attempt_set_shot_effect(shot_effect))
+        self.assertIsNone(player.attempt_set_movement_effect(movement_effect))
 
         self.assertIs(player.active_effects.get_shot_effect(), shot_effect)
         self.assertIs(player.active_effects.get_movement_effect(), movement_effect)
