@@ -99,6 +99,12 @@ class Game:
     def attempt_possess(self, player: Player, obj_name: str):
         return self.state.handle_possess(player, obj_name)
 
+    def attempt_set_shot_effect(self, player: Player, effect):
+        return self.state.handle_set_shot_effect(player, effect)
+
+    def attempt_set_movement_effect(self, player: Player, effect):
+        return self.state.handle_set_movement_effect(player, effect)
+
     # ============================================================
     # CORE MECHANICS (WORLD MUTATION)
     # ============================================================
@@ -116,6 +122,12 @@ class Game:
         player.current_weapon_slot = slot_name
         self.notify_player(player, f"Switched to {slot_name}")
         return True
+
+    def _set_shot_effect_core(self, player: Player, effect) -> None:
+        player.active_effects.set_shot_effect(effect)
+
+    def _set_movement_effect_core(self, player: Player, effect) -> None:
+        player.active_effects.set_movement_effect(effect)
 
     def _pickup_weapon_into_slot_core(self, player: Player, weapon: Weapon, slot_name: str):
         if weapon.owner is not None:
