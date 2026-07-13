@@ -12,7 +12,7 @@ GLOCK_17 = GunSpec(
 AR_15 = GunSpec(
     name="AR-15",
     mag_size=30,
-    damage=30,
+    damage=25,
     bullet_speed=45.0,
     spread_deg=1.2,
 )

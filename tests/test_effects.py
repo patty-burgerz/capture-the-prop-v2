@@ -306,6 +306,130 @@ class TestActiveEffectIntegration(unittest.TestCase):
         self.assertEqual(self.player.position, (20, 40))  # Speed boost
 
 
+class TestEffectAssignmentStatePolicy(unittest.TestCase):
+    """Tests for authoritative effect assignment through game state policy."""
+
+    def setUp(self):
+        self.game = Game()
+        self.player = Player("TestPlayer", "hunter", self.game)
+
+    def test_playing_state_allows_setting_shot_effect(self):
+        self.game.switch_state(self.game.playing_state)
+        effect = DoubleDamageEffect()
+
+        result = self.player.attempt_set_shot_effect(effect)
+
+        self.assertIsNone(result)
+        self.assertIs(self.player.active_effects.get_shot_effect(), effect)
+
+    def test_playing_state_allows_setting_movement_effect(self):
+        self.game.switch_state(self.game.playing_state)
+        effect = SpeedBoostEffect(speed_multiplier=2.0)
+
+        result = self.player.attempt_set_movement_effect(effect)
+
+        self.assertIsNone(result)
+        self.assertIs(self.player.active_effects.get_movement_effect(), effect)
+
+    def test_lobby_state_denies_setting_shot_effect(self):
+        self.game.switch_state(self.game.lobby_state)
+        original = DoubleDamageEffect()
+        self.player.active_effects.set_shot_effect(original)
+
+        result = self.player.attempt_set_shot_effect(DoubleDamageEffect())
+
+        self.assertFalse(result)
+        self.assertIs(self.player.active_effects.get_shot_effect(), original)
+
+    def test_lobby_state_denies_setting_movement_effect(self):
+        self.game.switch_state(self.game.lobby_state)
+        original = SpeedBoostEffect(speed_multiplier=2.0)
+        self.player.active_effects.set_movement_effect(original)
+
+        result = self.player.attempt_set_movement_effect(SpeedBoostEffect(speed_multiplier=1.5))
+
+        self.assertFalse(result)
+        self.assertIs(self.player.active_effects.get_movement_effect(), original)
+
+    def test_preparing_state_denies_setting_shot_effect(self):
+        self.game.switch_state(self.game.preparing_state)
+        original = DoubleDamageEffect()
+        self.player.active_effects.set_shot_effect(original)
+
+        result = self.player.attempt_set_shot_effect(DoubleDamageEffect())
+
+        self.assertFalse(result)
+        self.assertIs(self.player.active_effects.get_shot_effect(), original)
+
+    def test_preparing_state_denies_setting_movement_effect(self):
+        self.game.switch_state(self.game.preparing_state)
+        original = SpeedBoostEffect(speed_multiplier=2.0)
+        self.player.active_effects.set_movement_effect(original)
+
+        result = self.player.attempt_set_movement_effect(SpeedBoostEffect(speed_multiplier=1.5))
+
+        self.assertFalse(result)
+        self.assertIs(self.player.active_effects.get_movement_effect(), original)
+
+    def test_denied_request_leaves_existing_effects_unchanged(self):
+        self.game.switch_state(self.game.lobby_state)
+        original_shot = DoubleDamageEffect()
+        original_movement = SpeedBoostEffect(speed_multiplier=2.0)
+        self.player.active_effects.set_shot_effect(original_shot)
+        self.player.active_effects.set_movement_effect(original_movement)
+
+        self.player.attempt_set_shot_effect(DoubleDamageEffect())
+        self.player.attempt_set_movement_effect(SpeedBoostEffect(speed_multiplier=1.5))
+
+        self.assertIs(self.player.active_effects.get_shot_effect(), original_shot)
+        self.assertIs(self.player.active_effects.get_movement_effect(), original_movement)
+
+    def test_playing_state_can_clear_shot_slot_with_none(self):
+        self.game.switch_state(self.game.playing_state)
+        self.player.active_effects.set_shot_effect(DoubleDamageEffect())
+
+        self.player.attempt_set_shot_effect(None)
+
+        self.assertIsNone(self.player.active_effects.get_shot_effect())
+
+    def test_playing_state_can_clear_movement_slot_with_none(self):
+        self.game.switch_state(self.game.playing_state)
+        self.player.active_effects.set_movement_effect(SpeedBoostEffect(speed_multiplier=2.0))
+
+        self.player.attempt_set_movement_effect(None)
+
+        self.assertIsNone(self.player.active_effects.get_movement_effect())
+
+    def test_setting_shot_effect_does_not_alter_movement_slot(self):
+        self.game.switch_state(self.game.playing_state)
+        movement_effect = SpeedBoostEffect(speed_multiplier=2.0)
+        self.player.active_effects.set_movement_effect(movement_effect)
+
+        self.player.attempt_set_shot_effect(DoubleDamageEffect())
+
+        self.assertIs(self.player.active_effects.get_movement_effect(), movement_effect)
+
+    def test_setting_movement_effect_does_not_alter_shot_slot(self):
+        self.game.switch_state(self.game.playing_state)
+        shot_effect = DoubleDamageEffect()
+        self.player.active_effects.set_shot_effect(shot_effect)
+
+        self.player.attempt_set_movement_effect(SpeedBoostEffect(speed_multiplier=1.5))
+
+        self.assertIs(self.player.active_effects.get_shot_effect(), shot_effect)
+
+    def test_second_effect_in_same_category_replaces_first(self):
+        self.game.switch_state(self.game.playing_state)
+        first = DoubleDamageEffect()
+        second = DoubleDamageEffect()
+        self.player.active_effects.set_shot_effect(first)
+
+        self.player.attempt_set_shot_effect(second)
+
+        self.assertIs(self.player.active_effects.get_shot_effect(), second)
+        self.assertIsNot(self.player.active_effects.get_shot_effect(), first)
+
+
 class TestBaseActiveEffect(unittest.TestCase):
     """Test the base ActiveEffect class."""
     

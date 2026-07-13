@@ -52,6 +52,12 @@ class Player:
     def attempt_possess(self, obj_name: str):
         return self.game.attempt_possess(self, obj_name)
 
+    def attempt_set_shot_effect(self, effect):
+        return self.game.attempt_set_shot_effect(self, effect)
+
+    def attempt_set_movement_effect(self, effect):
+        return self.game.attempt_set_movement_effect(self, effect)
+
     def shoot(self):
         return self.attempt_use_weapon()
 
