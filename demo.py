@@ -4,7 +4,7 @@ from entities.weapons.gun import Gun
 from entities.weapons.gun_library import GLOCK_17
 from entities.weapons.gun_library import AR_15
 
-from entities.weapons.shot_modifiers import DoubleDamageModifier
+from entities.effects import DoubleDamageEffect, SpeedBoostEffect 
 
 if __name__ == "__main__":
 
@@ -26,10 +26,12 @@ if __name__ == "__main__":
     #hunter.add_shot_modifier(DoubleDamageModifier())
     hunter.attempt_pickup_weapon(ar15)
     #hunter.attempt_use_weapon()
+    hunter.attempt_set_shot_effect(DoubleDamageEffect())
+    
 
     game.switch_state(game.playing_state)
     
     hunter.attempt_use_weapon()
-    hunter.add_shot_modifier(DoubleDamageModifier())
+    hunter.attempt_set_shot_effect(DoubleDamageEffect())
     hunter.attempt_use_weapon()
  
