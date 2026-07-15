@@ -14,6 +14,9 @@ class ActionRouter:
         self.game = game
 
     def attempt_move(self, player: Player, new_position):
+        if player.status.blocks("move"):
+            self.game.notify_player(player, "Denied: you can't move right now.")
+            return None
         return self.game.state.handle_move(player, new_position)
 
     def attempt_pickup_weapon(self, player: Player, weapon: Weapon):
