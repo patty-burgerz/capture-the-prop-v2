@@ -58,8 +58,5 @@ class Player:
     def attempt_set_movement_effect(self, effect):
         return self.game.attempt_set_movement_effect(self, effect)
 
-    def shoot(self):
-        return self.attempt_use_weapon()
-
     def update(self, message: str):
         print(f"[{self.role.upper()} {self.name}] {message}")

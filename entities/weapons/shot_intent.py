@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from entities.weapons.gun_spec import GunSpec
+from travel/travel_behavior import TravelBehavior
 @dataclass(frozen=True)
 class ShotIntent:
     """
@@ -19,4 +20,5 @@ class ShotIntent:
     spec: GunSpec
     damage: int
     bullet_speed: float
-    spread_deg: float
+    spread_deg: float,
+    travel_behavior: TravelBehavior
