@@ -107,12 +107,6 @@ class Game:
     def attempt_set_movement_effect(self, player: Player, effect: "ActiveEffect"):
         return self.actions.attempt_set_movement_effect(player, effect)
 
-    def attempt_set_shot_effect(self, player: Player, effect):
-        return self.state.handle_set_shot_effect(player, effect)
-
-    def attempt_set_movement_effect(self, player: Player, effect):
-        return self.state.handle_set_movement_effect(player, effect)
-
     # ============================================================
     # CORE MECHANICS (WORLD MUTATION)
     # ============================================================
