@@ -9,6 +9,7 @@ from entities.player import Player
 from entities.weapons.weapon import Weapon
 from entities.weapons.shot_intent import ShotIntent
 from entities.Bullet import Bullet
+from core.movement_controller import MovementController
 
 if TYPE_CHECKING:
     from entities.effects.active_effect import ActiveEffect
@@ -45,6 +46,7 @@ class Game:
         self.effects = EffectController(self)
         self.weapons = WeaponController(self)
         self.world = WorldController(self)
+        self.movement = MovementController(self)
 
     # ============================================================
     # Notifications (TEMPORARY / DEBUG-ORIENTED)
@@ -112,16 +114,10 @@ class Game:
     # ============================================================
     
     def _move_core(self, player: Player, new_position):
-        return self.actions.move_core(player, new_position)
+        return self.movement.move(player, new_position)
 
     def _switch_slot_core(self, player: Player, slot_name: str):
         return self.weapons.switch_slot(player, slot_name)
-
-    def _set_shot_effect_core(self, player: Player, effect) -> None:
-        player.active_effects.set_shot_effect(effect)
-
-    def _set_movement_effect_core(self, player: Player, effect) -> None:
-        player.active_effects.set_movement_effect(effect)
 
     def _pickup_weapon_into_slot_core(self, player: Player, weapon: Weapon, slot_name: str):
         return self.weapons.pickup_into_slot(player, weapon, slot_name)

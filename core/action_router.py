@@ -45,8 +45,3 @@ class ActionRouter:
 
     def attempt_set_movement_effect(self, player: Player, effect):
         return self.game.state.handle_set_movement_effect(player, effect)
-
-    def move_core(self, player: Player, new_position):
-        final_position = player.active_effects.modify_movement(new_position)
-        player.position = final_position
-        return True
