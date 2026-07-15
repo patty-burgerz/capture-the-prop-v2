@@ -54,7 +54,7 @@ class ActiveEffects:
         return self._shot_effect.modify_shot(shot_intent)
     
     def modify_movement(self, move_intent):
-    if self._movement_effect is None:
-        return move_intent
+        if self._movement_effect is None:
+            return move_intent
 
-    return self._movement_effect.modify_movement(move_intent)
+        return self._movement_effect.modify_movement(move_intent)

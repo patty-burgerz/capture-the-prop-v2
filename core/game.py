@@ -119,12 +119,6 @@ class Game:
     def _switch_slot_core(self, player: Player, slot_name: str):
         return self.weapons.switch_slot(player, slot_name)
 
-    def _set_shot_effect_core(self, player: Player, effect) -> None:
-        player.active_effects.set_shot_effect(effect)
-
-    def _set_movement_effect_core(self, player: Player, effect) -> None:
-        player.active_effects.set_movement_effect(effect)
-
     def _pickup_weapon_into_slot_core(self, player: Player, weapon: Weapon, slot_name: str):
         return self.weapons.pickup_into_slot(player, weapon, slot_name)
 
