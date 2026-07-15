@@ -53,12 +53,8 @@ class ActiveEffects:
             return shot_intent
         return self._shot_effect.modify_shot(shot_intent)
     
-    def modify_movement(self, movement):
-        """
-        Apply the active movement effect to movement data.
-        
-        If no movement effect is active, returns the original movement unchanged.
-        """
-        if self._movement_effect is None:
-            return movement
-        return self._movement_effect.modify_movement(movement)
+    def modify_movement(self, move_intent):
+    if self._movement_effect is None:
+        return move_intent
+
+    return self._movement_effect.modify_movement(move_intent)
