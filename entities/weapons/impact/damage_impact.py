@@ -1,4 +1,4 @@
-from impact/impact_behavior import ImpactBehavior
+from entities.weapons.impact.impact_behavior import ImpactBehavior
 
 class DamageImpact(ImpactBehavior):
     """

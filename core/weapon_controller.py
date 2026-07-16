@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from entities.weapons.shot_intent import ShotIntent
-from entities.Bullet import Bullet
+from entities.weapons.Bullet import Bullet
 
 if TYPE_CHECKING:
     from core.game import Game
@@ -91,9 +91,9 @@ class WeaponController:
             owner_id=player.name,
             damage=int(shot_intent.damage),
             ttl=2.0,
-            travel=shot_intent.travel_behavior,
-            impact=shot_intent.impact_behavior
+            travel_behavior=shot_intent.travel_behavior,
+            impact_behaviors=shot_intent.impact_behaviors
         )
         self.game.bullets.append(bullet)
-        self.game.notify_player(player, f"Fired {shot_intent.spec.name}")
+        self.game.notify_player(player, f"Fired {shot_intent.name}")
         return True

@@ -11,10 +11,6 @@ class EffectController:
     def __init__(self, game: "Game"):
         self.game = game
 
-    def set_shot_effect(self, player, effect: Optional["ActiveEffect"]):
-        player.active_effects.set_shot_effect(effect)
-        return True
-
-    def set_movement_effect(self, player, effect: Optional["ActiveEffect"]):
-        player.active_effects.set_movement_effect(effect)
-        return True
+    def add_effect(self, player, effect):
+        player.active_effects.add_effect(effect)
+        return effect

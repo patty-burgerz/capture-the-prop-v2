@@ -2,7 +2,7 @@ from typing import Optional, Dict, TYPE_CHECKING
 
 from core.status import Status
 from entities.weapons.weapon import Weapon
-from entities.effects import ActiveEffects
+from entities.effects.active_effects import ActiveEffects
 
 if TYPE_CHECKING:
     from core.game import Game
@@ -53,11 +53,8 @@ class Player:
     def attempt_possess(self, obj_name: str):
         return self.game.attempt_possess(self, obj_name)
 
-    def attempt_set_shot_effect(self, effect):
-        return self.game.attempt_set_shot_effect(self, effect)
-
-    def attempt_set_movement_effect(self, effect):
-        return self.game.attempt_set_movement_effect(self, effect)
+    def attempt_add_effect(self, effect):
+        return self.game.attempt_add_effect(self, effect)
 
     def update(self, message: str):
         print(f"[{self.role.upper()} {self.name}] {message}")

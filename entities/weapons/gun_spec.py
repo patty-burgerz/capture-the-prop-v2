@@ -12,6 +12,7 @@ class GunSpec:
     damage: int
     bullet_speed: float
     spread_deg: float
+    mag_size: int
 
     travel_behavior: TravelBehavior = field(
         default_factory=StraightTravel
