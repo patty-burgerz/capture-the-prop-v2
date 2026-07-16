@@ -73,8 +73,10 @@ class Gun(Weapon):
         # Create a per-shot receipt (copied from spec so it can be modified per-shot
         # without mutating the shared GunSpec).
         return ShotIntent(
-            spec=self.spec,
+            name=self.spec.name,
             damage=self.spec.damage,
             bullet_speed=self.spec.bullet_speed,
             spread_deg=self.spec.spread_deg,
+            travel_behavior=self.spec.travel_behavior,
+            impact_behaviors=self.spec.impact_behaviors
         )

@@ -21,11 +21,8 @@ class GameState:
     def handle_possess(self, player: Player, obj_name: str):
         raise NotImplementedError
 
-    def handle_set_shot_effect(self, player: Player, effect):
-        raise NotImplementedError
-
-    def handle_set_movement_effect(self, player: Player, effect):
-        raise NotImplementedError
+    def handle_add_effect(self, player, effect):
+        return NotImplementedError
 
 
 class LobbyState(GameState):
@@ -48,11 +45,7 @@ class LobbyState(GameState):
         self.game.notify_player(player, "Can't possess in the lobby.")
         return False
 
-    def handle_set_shot_effect(self, player, effect):
-        self.game.notify_player(player, "Can't assign shot effects in the lobby.")
-        return False
-
-    def handle_set_movement_effect(self, player, effect):
+    def handle_add_effect(self, player, effect):
         self.game.notify_player(player, "Can't assign movement effects in the lobby.")
         return False
 
@@ -76,13 +69,10 @@ class PreparingState(GameState):
         self.game.notify_all(f"{player.name} possessed {obj_name} (PREPARING)")
         return True
 
-    def handle_set_shot_effect(self, player, effect):
-        self.game.notify_player(player, "Can't assign shot effects while preparing.")
+    def handle_add_effect(self, player, effect):
+        self.game.notify_player(player, "Can't assign movement while preparing")
         return False
-
-    def handle_set_movement_effect(self, player, effect):
-        self.game.notify_player(player, "Can't assign movement effects while preparing.")
-        return False
+    
 
 
 class PlayingState(GameState):
@@ -104,10 +94,5 @@ class PlayingState(GameState):
         self.game.notify_all(f"{player.name} possessed {obj_name} (PLAYING)")
         return True
 
-    def handle_set_shot_effect(self, player, effect):
-        self.game._set_shot_effect_core(player, effect)
-        return None
-
-    def handle_set_movement_effect(self, player, effect):
-        self.game._set_movement_effect_core(player, effect)
-        return None
+    def handle_add_effect(self, player, effect):
+        return self.game._add_effect_core(player, effect)

@@ -8,7 +8,7 @@ from core.world_controller import WorldController
 from entities.player import Player
 from entities.weapons.weapon import Weapon
 from entities.weapons.shot_intent import ShotIntent
-from entities.Bullet import Bullet
+from entities.weapons.Bullet import Bullet
 from core.movement_controller import MovementController
 
 if TYPE_CHECKING:
@@ -103,16 +103,15 @@ class Game:
     def attempt_possess(self, player: Player, obj_name: str):
         return self.actions.attempt_possess(player, obj_name)
 
-    def attempt_set_shot_effect(self, player: Player, effect: "ActiveEffect"):
-        return self.actions.attempt_set_shot_effect(player, effect)
-
-    def attempt_set_movement_effect(self, player: Player, effect: "ActiveEffect"):
-        return self.actions.attempt_set_movement_effect(player, effect)
+    def attempt_add_effect(self, player, effect):
+        return self.actions.attempt_add_effect(player, effect)
 
     # ============================================================
     # CORE MECHANICS (WORLD MUTATION)
     # ============================================================
-    
+    def _add_effect_core(self, player, effect):
+        return self.effects.add_effect(player, effect)
+        
     def _move_core(self, player: Player, new_position):
         return self.movement.move(player, new_position)
 
@@ -121,6 +120,15 @@ class Game:
 
     def _pickup_weapon_into_slot_core(self, player: Player, weapon: Weapon, slot_name: str):
         return self.weapons.pickup_into_slot(player, weapon, slot_name)
+
+    def _handle_player_death(self, player: Player):
+        self.notify_all(f"{player.name} has died!")
+        if player in self.hunters:
+            self.hunters.remove(player)
+        elif player in self.props:
+            self.props.remove(player)
+        self.add_guardian(player)  # For now, dead players become guardian angels
+        # Additional death handling logic can be added here (e.g., respawn, score update, etc.)
 
     # ============================================================
     # WORLD UPDATE (Game acts as World for now)
@@ -145,8 +153,5 @@ class Game:
     def _execute_shot_intent_core(self, player: Player, shot_intent: ShotIntent):
         return self.weapons.execute_shot_intent(player, shot_intent)
 
-    def _set_shot_effect_core(self, player: Player, effect: "ActiveEffect"):
-        return self.effects.set_shot_effect(player, effect)
-
-    def _set_movement_effect_core(self, player: Player, effect: "ActiveEffect"):
-        return self.effects.set_movement_effect(player, effect)
+    def attempt_add_effect(self, player, effect):
+        return self.actions.attempt_add_effect(player, effect)

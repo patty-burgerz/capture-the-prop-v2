@@ -40,8 +40,12 @@ class ActionRouter:
     def attempt_possess(self, player: Player, obj_name: str):
         return self.game.state.handle_possess(player, obj_name)
 
-    def attempt_set_shot_effect(self, player: Player, effect):
-        return self.game.state.handle_set_shot_effect(player, effect)
+    def attempt_add_effect(self, player, effect):
+        if player.status.blocks("add_effect"):
+            self.game.notify_player(
+            player,
+            "Denied: you can't receive an effect right now.",
+        ) 
+            return None
 
-    def attempt_set_movement_effect(self, player: Player, effect):
-        return self.game.state.handle_set_movement_effect(player, effect)
+        return self.game.state.handle_add_effect(player, effect)
