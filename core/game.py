@@ -122,6 +122,15 @@ class Game:
     def _pickup_weapon_into_slot_core(self, player: Player, weapon: Weapon, slot_name: str):
         return self.weapons.pickup_into_slot(player, weapon, slot_name)
 
+    def _handle_player_death(self, player: Player):
+        self.notify_all(f"{player.name} has died!")
+        if player in self.hunters:
+            self.hunters.remove(player)
+        elif player in self.props:
+            self.props.remove(player)
+        self.add_guardian(player)  # For now, dead players become guardian angels
+        # Additional death handling logic can be added here (e.g., respawn, score update, etc.)
+
     # ============================================================
     # WORLD UPDATE (Game acts as World for now)
     # ============================================================

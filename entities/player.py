@@ -16,6 +16,7 @@ class Player:
 
         self.position = (0, 0)
         self.direction = (1, 0)
+        self.health = 100
 
         self.loadout: Dict[str, Optional[Weapon]] = {
             "primary": None,
@@ -60,3 +61,10 @@ class Player:
 
     def update(self, message: str):
         print(f"[{self.role.upper()} {self.name}] {message}")
+
+    # health
+    def take_damage(self, amount: int):
+        self.health -= amount
+        if self.health <= 0:
+            self.health = 0
+            self.game._handle_player_death(self)

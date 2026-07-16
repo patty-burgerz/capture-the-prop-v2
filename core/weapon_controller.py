@@ -92,6 +92,7 @@ class WeaponController:
             damage=int(shot_intent.damage),
             ttl=2.0,
             travel=shot_intent.travel_behavior,
+            impact=shot_intent.impact_behavior
         )
         self.game.bullets.append(bullet)
         self.game.notify_player(player, f"Fired {shot_intent.spec.name}")

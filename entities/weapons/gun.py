@@ -78,4 +78,5 @@ class Gun(Weapon):
             bullet_speed=self.spec.bullet_speed,
             spread_deg=self.spec.spread_deg,
             travel_behavior=self.spec.travel_behavior,
+            impact_behaviors=self.spec.impact_behaviors
         )
