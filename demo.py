@@ -4,6 +4,10 @@ from entities.player import Player
 from entities.effects.apply_movement_modifier_effect import (
     ApplyMovementModifierEffect,
 )
+
+from entities.effects.add_impact_effect import (
+    AddImpactEffect,
+)
 from entities.effects.apply_shot_value_modifier_effect import (
     ApplyShotValueModifierEffect,
 )
@@ -13,6 +17,12 @@ from entities.movement.modifiers.speed_multiplier import (
 )
 from entities.weapons.shot_values.damage_multiplier import (
     DamageMultiplier,
+)
+from entities.weapons.impact.damage_impact import (
+    DamageImpact,
+)
+from entities.weapons.impact.yeet_impact import (
+    YeetImpact,
 )
 
 from entities.weapons.gun_library import AR_15
@@ -56,4 +66,11 @@ hunter.attempt_add_effect(
     )
 )
 
+hunter.attempt_add_effect(
+    AddImpactEffect(YeetImpact())
+)
+
 hunter.attempt_use_weapon()
+hunter.attempt_use_weapon()
+# hunter.attempt_use_weapon()
+# hunter.attempt_use_weapon()
