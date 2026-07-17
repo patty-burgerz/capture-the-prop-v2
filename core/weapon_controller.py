@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from entities.weapons.shot_intent import ShotIntent
-from entities.weapons.Bullet import Bullet
+from entities.weapons.bullet import Bullet
 
 if TYPE_CHECKING:
     from core.game import Game

@@ -8,7 +8,7 @@ from core.world_controller import WorldController
 from entities.player import Player
 from entities.weapons.weapon import Weapon
 from entities.weapons.shot_intent import ShotIntent
-from entities.weapons.Bullet import Bullet
+from entities.weapons.bullet import Bullet
 from core.movement_controller import MovementController
 
 if TYPE_CHECKING:

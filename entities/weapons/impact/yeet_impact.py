@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from entities.weapons.impact.impact_behavior import ImpactBehavior
 
 if TYPE_CHECKING:
-    from entities.Bullet import Bullet
+    from entities.bullet import Bullet
     from entities.player import Player
 
 

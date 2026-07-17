@@ -5,7 +5,7 @@ from entities.player import Player
 from entities.weapons.gun_library import AR_15
 from entities.weapons.gun import Gun
 from entities.effects import DoubleDamageEffect, SpeedBoostEffect
-from entities.Bullet import Bullet
+from entities.bullet import Bullet
 
 
 class TestGameControllerRefactor(unittest.TestCase):
