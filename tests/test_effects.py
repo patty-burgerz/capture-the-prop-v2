@@ -1,458 +1,239 @@
-"""
-Tests for the typed shot and movement effects system.
-
-Tests verify:
-1. With no shot effect, the original ShotIntent is unchanged.
-2. With the double-damage shot effect, damage is doubled before Bullet creation.
-3. Assigning a new shot effect replaces the previous shot effect.
-4. With no movement effect, movement behaves exactly as before.
-5. With a movement effect, _move_core applies the transformed movement data.
-6. A shot effect does not affect movement.
-7. A movement effect does not affect shots.
-8. Existing tests still pass.
-"""
+"""Tests for the current composed effect system."""
 
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from core.game import Game
+from entities.effects.active_effects import ActiveEffects
+from entities.effects.add_impact_effect import AddImpactEffect
+from entities.effects.apply_movement_modifier_effect import (
+    ApplyMovementModifierEffect,
+)
+from entities.effects.apply_shot_value_modifier_effect import (
+    ApplyShotValueModifierEffect,
+)
+from entities.effects.replace_travel_effects import ReplaceTravelEffect
+from entities.movement.modifiers.speed_multiplier import SpeedMultiplier
+from entities.movement.movement_intent import MoveIntent
 from entities.player import Player
 from entities.weapons.gun import Gun
-from entities.weapons.gun_library import GLOCK_17, AR_15
+from entities.weapons.gun_library import AR_15
+from entities.weapons.impact.damage_impact import DamageImpact
+from entities.weapons.impact.yeet_impact import YeetImpact
 from entities.weapons.shot_intent import ShotIntent
-from entities.effects import (
-    ActiveEffect,
-    ActiveEffects,
-    DoubleDamageEffect,
-    SpeedBoostEffect,
-)
+from entities.weapons.shot_values.damage_multiplier import DamageMultiplier
+from entities.weapons.travel.straight_travel import StraightTravel
+from entities.weapons.travel.travel_behavior import TravelBehavior
 
 
-class TestActiveEffects(unittest.TestCase):
-    """Test the ActiveEffects container."""
-    
-    def test_empty_container_returns_original_shot_intent(self):
-        """With no shot effect, modify_shot returns the original ShotIntent unchanged."""
+class TestTravel(TravelBehavior):
+    """Simple alternate travel behavior used only by these tests."""
+
+    def update(self, bullet, world, dt):
+        pass
+
+
+def make_shot_intent():
+    """Return a fresh, predictable shot intent for unit tests."""
+    return ShotIntent(
+        name="Test gun",
+        damage=20,
+        bullet_speed=30.0,
+        spread_deg=1.0,
+        travel_behavior=StraightTravel(),
+        impact_behaviors=(DamageImpact(),),
+    )
+
+
+class TestActiveEffectsUnit(unittest.TestCase):
+    """Test effect composition without involving Game or Player."""
+
+    def test_empty_effects_leave_shot_unchanged(self):
         effects = ActiveEffects()
-        shot = ShotIntent(
-            spec=GLOCK_17,
-            damage=20,
-            bullet_speed=100.0,
-            spread_deg=0.0,
-        )
-        
+        shot = make_shot_intent()
+
         result = effects.modify_shot(shot)
-        self.assertIs(result, shot, "Should return the exact same object")
-        self.assertEqual(result.damage, 20)
-    
-    def test_empty_container_returns_original_movement(self):
-        """With no movement effect, modify_movement returns the original movement unchanged."""
-        effects = ActiveEffects()
-        movement = (10, 20)
-        
-        result = effects.modify_movement(movement)
-        self.assertIs(result, movement, "Should return the exact same object")
-        self.assertEqual(result, (10, 20))
-    
-    def test_set_and_get_shot_effect(self):
-        """Can set and retrieve a shot effect."""
-        effects = ActiveEffects()
-        effect = DoubleDamageEffect()
-        
-        effects.set_shot_effect(effect)
-        self.assertIs(effects.get_shot_effect(), effect)
-    
-    def test_set_and_get_movement_effect(self):
-        """Can set and retrieve a movement effect."""
-        effects = ActiveEffects()
-        effect = SpeedBoostEffect()
-        
-        effects.set_movement_effect(effect)
-        self.assertIs(effects.get_movement_effect(), effect)
-    
-    def test_replace_shot_effect(self):
-        """Assigning a new shot effect replaces the previous one."""
-        effects = ActiveEffects()
-        effect1 = DoubleDamageEffect()
-        effect2 = DoubleDamageEffect()
-        
-        effects.set_shot_effect(effect1)
-        self.assertIs(effects.get_shot_effect(), effect1)
-        
-        effects.set_shot_effect(effect2)
-        self.assertIs(effects.get_shot_effect(), effect2)
-        self.assertIsNot(effects.get_shot_effect(), effect1)
-    
-    def test_clear_shot_effect(self):
-        """Can clear the shot effect by setting to None."""
-        effects = ActiveEffects()
-        effect = DoubleDamageEffect()
-        
-        effects.set_shot_effect(effect)
-        effects.set_shot_effect(None)
-        self.assertIsNone(effects.get_shot_effect())
-    
-    def test_modify_shot_applies_effect(self):
-        """modify_shot applies the active effect."""
-        effects = ActiveEffects()
-        effect = DoubleDamageEffect()
-        effects.set_shot_effect(effect)
-        
-        shot = ShotIntent(
-            spec=GLOCK_17,
-            damage=20,
-            bullet_speed=100.0,
-            spread_deg=0.0,
-        )
-        
-        result = effects.modify_shot(shot)
-        self.assertEqual(result.damage, 40)
-        self.assertEqual(result.bullet_speed, 100.0)
-    
-    def test_modify_movement_applies_effect(self):
-        """modify_movement applies the active effect."""
-        effects = ActiveEffects()
-        effect = SpeedBoostEffect(speed_multiplier=2.0)
-        effects.set_movement_effect(effect)
-        
-        movement = (10, 20)
-        result = effects.modify_movement(movement)
-        self.assertEqual(result, (20, 40))
 
-
-class TestDoubleDamageEffect(unittest.TestCase):
-    """Test the DoubleDamageEffect."""
-    
-    def test_double_damage_doubles_damage(self):
-        """DoubleDamageEffect doubles the damage of a shot."""
-        effect = DoubleDamageEffect()
-        shot = ShotIntent(
-            spec=GLOCK_17,
-            damage=20,
-            bullet_speed=100.0,
-            spread_deg=0.0,
-        )
-        
-        result = effect.modify_shot(shot)
-        self.assertEqual(result.damage, 40)
-    
-    def test_double_damage_preserves_other_fields(self):
-        """DoubleDamageEffect only modifies damage, not other fields."""
-        effect = DoubleDamageEffect()
-        shot = ShotIntent(
-            spec=GLOCK_17,
-            damage=20,
-            bullet_speed=100.0,
-            spread_deg=0.5,
-        )
-        
-        result = effect.modify_shot(shot)
-        self.assertEqual(result.bullet_speed, 100.0)
-        self.assertEqual(result.spread_deg, 0.5)
-        self.assertIs(result.spec, shot.spec)
-    
-    def test_double_damage_does_not_affect_movement(self):
-        """DoubleDamageEffect does not affect movement."""
-        effect = DoubleDamageEffect()
-        movement = (10, 20)
-        
-        result = effect.modify_movement(movement)
-        self.assertIs(result, movement)
-
-
-class TestSpeedBoostEffect(unittest.TestCase):
-    """Test the SpeedBoostEffect."""
-    
-    def test_speed_boost_multiplies_movement(self):
-        """SpeedBoostEffect multiplies movement coordinates."""
-        effect = SpeedBoostEffect(speed_multiplier=2.0)
-        movement = (10, 20)
-        
-        result = effect.modify_movement(movement)
-        self.assertEqual(result, (20, 40))
-    
-    def test_speed_boost_with_custom_multiplier(self):
-        """SpeedBoostEffect uses custom multiplier."""
-        effect = SpeedBoostEffect(speed_multiplier=1.5)
-        movement = (10, 20)
-        
-        result = effect.modify_movement(movement)
-        self.assertEqual(result, (15, 30))
-    
-    def test_speed_boost_does_not_affect_shots(self):
-        """SpeedBoostEffect does not affect shots."""
-        effect = SpeedBoostEffect()
-        shot = ShotIntent(
-            spec=GLOCK_17,
-            damage=20,
-            bullet_speed=100.0,
-            spread_deg=0.0,
-        )
-        
-        result = effect.modify_shot(shot)
         self.assertIs(result, shot)
 
+    def test_empty_effects_leave_movement_unchanged(self):
+        effects = ActiveEffects()
+        move = MoveIntent(
+            current_position=(0, 0),
+            requested_position=(10, 20),
+        )
 
-class TestActiveEffectIntegration(unittest.TestCase):
-    """Integration tests with Game and Player."""
-    
+        result = effects.modify_movement(move)
+
+        self.assertIs(result, move)
+
+    def test_damage_multiplier_changes_only_damage(self):
+        effects = ActiveEffects()
+        effects.add_effect(
+            ApplyShotValueModifierEffect(DamageMultiplier(2.0))
+        )
+        shot = make_shot_intent()
+
+        result = effects.modify_shot(shot)
+
+        self.assertEqual(result.damage, 40)
+        self.assertEqual(result.bullet_speed, shot.bullet_speed)
+        self.assertEqual(result.spread_deg, shot.spread_deg)
+        self.assertIs(result.travel_behavior, shot.travel_behavior)
+        self.assertEqual(result.impact_behaviors, shot.impact_behaviors)
+
+    def test_latest_modifier_of_same_type_replaces_previous_one(self):
+        effects = ActiveEffects()
+        effects.add_effect(
+            ApplyShotValueModifierEffect(DamageMultiplier(2.0))
+        )
+        effects.add_effect(
+            ApplyShotValueModifierEffect(DamageMultiplier(3.0))
+        )
+
+        result = effects.modify_shot(make_shot_intent())
+
+        self.assertEqual(result.damage, 60)
+
+    def test_speed_multiplier_changes_requested_position(self):
+        effects = ActiveEffects()
+        effects.add_effect(
+            ApplyMovementModifierEffect(SpeedMultiplier(2.0))
+        )
+        move = MoveIntent(
+            current_position=(100, 100),
+            requested_position=(101, 100),
+        )
+
+        result = effects.modify_movement(move)
+
+        self.assertEqual(result.current_position, (100, 100))
+        self.assertEqual(result.requested_position, (102.0, 100.0))
+
+    def test_impact_effect_appends_instead_of_replacing(self):
+        effects = ActiveEffects()
+        effects.add_effect(AddImpactEffect(YeetImpact()))
+
+        result = effects.modify_shot(make_shot_intent())
+
+        self.assertEqual(len(result.impact_behaviors), 2)
+        self.assertIsInstance(result.impact_behaviors[0], DamageImpact)
+        self.assertIsInstance(result.impact_behaviors[1], YeetImpact)
+
+    def test_travel_effect_replaces_travel_behavior(self):
+        effects = ActiveEffects()
+        replacement = TestTravel()
+        effects.add_effect(ReplaceTravelEffect(replacement))
+
+        result = effects.modify_shot(make_shot_intent())
+
+        self.assertIs(result.travel_behavior, replacement)
+
+    def test_unsupported_object_is_rejected(self):
+        effects = ActiveEffects()
+
+        with self.assertRaises(TypeError):
+            effects.add_effect(object())
+
+
+class TestEffectIntegration(unittest.TestCase):
+    """Test effects through the real Player -> Game pipelines."""
+
     def setUp(self):
-        """Set up a game and player for testing."""
         self.game = Game()
-        self.player = Player("TestPlayer", "hunter", self.game)
+        self.hunter = Player("Hunter", "hunter", self.game)
         self.game.switch_state(self.game.playing_state)
-    
-    def test_player_has_active_effects(self):
-        """Player has an active_effects attribute."""
-        self.assertIsNotNone(self.player.active_effects)
-        self.assertIsInstance(self.player.active_effects, ActiveEffects)
-    
-    def test_no_shot_effect_original_bullet(self):
-        """With no shot effect, bullet has original damage."""
-        weapon = Gun(AR_15, starting_ammo=10)
-        self.player.attempt_pickup_weapon(weapon)
-        
-        # Fire without effect
-        self.player.attempt_use_weapon()
-        self.assertEqual(len(self.game.bullets), 1)
-        self.assertEqual(self.game.bullets[0].damage, AR_15.damage)  # AR_15 base damage
-    
-    def test_double_damage_effect_doubles_bullet_damage(self):
-        """With double-damage shot effect, bullet damage is doubled."""
-        weapon = Gun(AR_15, starting_ammo=10)
-        self.player.attempt_pickup_weapon(weapon)
-        
-        # Apply double damage effect
-        self.player.active_effects.set_shot_effect(DoubleDamageEffect())
-        
-        # Fire with effect
-        self.player.attempt_use_weapon()
+
+    def equip_ar_15(self):
+        self.hunter.attempt_pickup_weapon(Gun(AR_15))
+
+    def test_damage_effect_changes_spawned_bullet(self):
+        self.equip_ar_15()
+        self.hunter.attempt_add_effect(
+            ApplyShotValueModifierEffect(DamageMultiplier(2.0))
+        )
+
+        self.hunter.attempt_use_weapon()
+
         self.assertEqual(len(self.game.bullets), 1)
         self.assertEqual(self.game.bullets[0].damage, AR_15.damage * 2)
-    
-    def test_replacing_shot_effect(self):
-        """Replacing a shot effect replaces behavior."""
-        weapon = Gun(AR_15, starting_ammo=10)
-        self.player.attempt_pickup_weapon(weapon)
-        
-        # Apply first effect
-        self.player.active_effects.set_shot_effect(DoubleDamageEffect())
-        self.player.attempt_use_weapon()
-        first_damage = self.game.bullets[0].damage
-        
-        # Replace with no effect
-        self.game.bullets = []  # Clear bullets
-        self.player.active_effects.set_shot_effect(None)
-        self.player.attempt_use_weapon()
-        second_damage = self.game.bullets[0].damage
-        
-        self.assertEqual(first_damage, AR_15.damage * 2)
-        self.assertEqual(second_damage, AR_15.damage)
-    
-    def test_no_movement_effect_original_position(self):
-        """With no movement effect, movement works as before."""
-        self.player.position = (0, 0)
-        
-        self.player.attempt_move((10, 20))
-        self.assertEqual(self.player.position, (10, 20))
-    
-    def test_movement_effect_transforms_movement(self):
-        """With movement effect, _move_core applies the transformed movement."""
-        self.player.position = (0, 0)
-        effect = SpeedBoostEffect(speed_multiplier=2.0)
-        self.player.active_effects.set_movement_effect(effect)
-        
-        self.player.attempt_move((10, 20))
-        # With speed boost, (10, 20) becomes (20, 40)
-        self.assertEqual(self.player.position, (20, 40))
-    
-    def test_shot_effect_does_not_affect_movement(self):
-        """Shot effect does not affect movement."""
-        self.player.position = (0, 0)
-        self.player.active_effects.set_shot_effect(DoubleDamageEffect())
-        
-        self.player.attempt_move((10, 20))
-        self.assertEqual(self.player.position, (10, 20))
-    
-    def test_movement_effect_does_not_affect_shots(self):
-        """Movement effect does not affect shot damage."""
-        weapon = Gun(AR_15, starting_ammo=10)
-        self.player.attempt_pickup_weapon(weapon)
-        
-        # Apply movement effect only
-        self.player.active_effects.set_movement_effect(SpeedBoostEffect(speed_multiplier=2.0))
-        
-        # Fire a shot
-        self.player.attempt_use_weapon()
-        self.assertEqual(len(self.game.bullets), 1)
-        self.assertEqual(self.game.bullets[0].damage, AR_15.damage)  # Original damage
-    
-    def test_both_effects_work_independently(self):
-        """Shot and movement effects work independently."""
-        weapon = Gun(AR_15, starting_ammo=10)
-        self.player.attempt_pickup_weapon(weapon)
-        self.player.position = (0, 0)
-        
-        # Apply both effects
-        self.player.active_effects.set_shot_effect(DoubleDamageEffect())
-        self.player.active_effects.set_movement_effect(SpeedBoostEffect(speed_multiplier=2.0))
-        
-        # Fire and move
-        self.player.attempt_use_weapon()
-        self.player.attempt_move((10, 20))
-        
-        # Verify both applied
-        self.assertEqual(self.game.bullets[0].damage, AR_15.damage * 2)  # Double damage
-        self.assertEqual(self.player.position, (20, 40))  # Speed boost
+
+    def test_movement_effect_changes_committed_position(self):
+        self.hunter.position = (100, 100)
+        self.hunter.attempt_add_effect(
+            ApplyMovementModifierEffect(SpeedMultiplier(2.0))
+        )
+
+        self.hunter.attempt_move((101, 100))
+
+        self.assertEqual(self.hunter.position, (102.0, 100.0))
+
+    def test_bullet_contains_and_executes_both_impacts(self):
+        self.equip_ar_15()
+        self.hunter.attempt_add_effect(AddImpactEffect(YeetImpact()))
+        self.hunter.attempt_use_weapon()
+        bullet = self.game.bullets[-1]
+
+        target = Player("Target", "prop", self.game)
+        target.update = MagicMock()
+
+        bullet.impact(target)
+
+        self.assertEqual(target.health, 100 - AR_15.damage)
+        target.update.assert_called_once_with(
+            f"BONK! Yeet strength: {AR_15.damage * 1.0}"
+        )
+        self.assertFalse(bullet.alive)
+
+    def test_shot_and_movement_effects_work_independently(self):
+        self.equip_ar_15()
+        self.hunter.position = (0, 0)
+        self.hunter.attempt_add_effect(
+            ApplyShotValueModifierEffect(DamageMultiplier(2.0))
+        )
+        self.hunter.attempt_add_effect(
+            ApplyMovementModifierEffect(SpeedMultiplier(2.0))
+        )
+
+        self.hunter.attempt_use_weapon()
+        self.hunter.attempt_move((10, 20))
+
+        self.assertEqual(self.game.bullets[0].damage, AR_15.damage * 2)
+        self.assertEqual(self.hunter.position, (20.0, 40.0))
 
 
-class TestEffectAssignmentStatePolicy(unittest.TestCase):
-    """Tests for authoritative effect assignment through game state policy."""
+class TestEffectAssignmentPolicy(unittest.TestCase):
+    """Test that game state decides whether effects may be assigned."""
 
     def setUp(self):
         self.game = Game()
-        self.player = Player("TestPlayer", "hunter", self.game)
+        self.player = Player("Player", "hunter", self.game)
+        self.effect = ApplyMovementModifierEffect(SpeedMultiplier(2.0))
 
-    def test_playing_state_allows_setting_shot_effect(self):
+    def test_playing_state_allows_effect_assignment(self):
         self.game.switch_state(self.game.playing_state)
-        effect = DoubleDamageEffect()
 
-        result = self.player.attempt_set_shot_effect(effect)
+        result = self.player.attempt_add_effect(self.effect)
 
-        self.assertIsNone(result)
-        self.assertIs(self.player.active_effects.get_shot_effect(), effect)
+        self.assertIs(result, self.effect)
 
-    def test_playing_state_allows_setting_movement_effect(self):
-        self.game.switch_state(self.game.playing_state)
-        effect = SpeedBoostEffect(speed_multiplier=2.0)
-
-        result = self.player.attempt_set_movement_effect(effect)
-
-        self.assertIsNone(result)
-        self.assertIs(self.player.active_effects.get_movement_effect(), effect)
-
-    def test_lobby_state_denies_setting_shot_effect(self):
+    def test_lobby_state_denies_effect_assignment(self):
         self.game.switch_state(self.game.lobby_state)
-        original = DoubleDamageEffect()
-        self.player.active_effects.set_shot_effect(original)
 
-        result = self.player.attempt_set_shot_effect(DoubleDamageEffect())
+        result = self.player.attempt_add_effect(self.effect)
 
         self.assertFalse(result)
-        self.assertIs(self.player.active_effects.get_shot_effect(), original)
+        move = MoveIntent((0, 0), (10, 20))
+        self.assertIs(self.player.active_effects.modify_movement(move), move)
 
-    def test_lobby_state_denies_setting_movement_effect(self):
-        self.game.switch_state(self.game.lobby_state)
-        original = SpeedBoostEffect(speed_multiplier=2.0)
-        self.player.active_effects.set_movement_effect(original)
-
-        result = self.player.attempt_set_movement_effect(SpeedBoostEffect(speed_multiplier=1.5))
-
-        self.assertFalse(result)
-        self.assertIs(self.player.active_effects.get_movement_effect(), original)
-
-    def test_preparing_state_denies_setting_shot_effect(self):
+    def test_preparing_state_denies_effect_assignment(self):
         self.game.switch_state(self.game.preparing_state)
-        original = DoubleDamageEffect()
-        self.player.active_effects.set_shot_effect(original)
 
-        result = self.player.attempt_set_shot_effect(DoubleDamageEffect())
+        result = self.player.attempt_add_effect(self.effect)
 
         self.assertFalse(result)
-        self.assertIs(self.player.active_effects.get_shot_effect(), original)
-
-    def test_preparing_state_denies_setting_movement_effect(self):
-        self.game.switch_state(self.game.preparing_state)
-        original = SpeedBoostEffect(speed_multiplier=2.0)
-        self.player.active_effects.set_movement_effect(original)
-
-        result = self.player.attempt_set_movement_effect(SpeedBoostEffect(speed_multiplier=1.5))
-
-        self.assertFalse(result)
-        self.assertIs(self.player.active_effects.get_movement_effect(), original)
-
-    def test_denied_request_leaves_existing_effects_unchanged(self):
-        self.game.switch_state(self.game.lobby_state)
-        original_shot = DoubleDamageEffect()
-        original_movement = SpeedBoostEffect(speed_multiplier=2.0)
-        self.player.active_effects.set_shot_effect(original_shot)
-        self.player.active_effects.set_movement_effect(original_movement)
-
-        self.player.attempt_set_shot_effect(DoubleDamageEffect())
-        self.player.attempt_set_movement_effect(SpeedBoostEffect(speed_multiplier=1.5))
-
-        self.assertIs(self.player.active_effects.get_shot_effect(), original_shot)
-        self.assertIs(self.player.active_effects.get_movement_effect(), original_movement)
-
-    def test_playing_state_can_clear_shot_slot_with_none(self):
-        self.game.switch_state(self.game.playing_state)
-        self.player.active_effects.set_shot_effect(DoubleDamageEffect())
-
-        self.player.attempt_set_shot_effect(None)
-
-        self.assertIsNone(self.player.active_effects.get_shot_effect())
-
-    def test_playing_state_can_clear_movement_slot_with_none(self):
-        self.game.switch_state(self.game.playing_state)
-        self.player.active_effects.set_movement_effect(SpeedBoostEffect(speed_multiplier=2.0))
-
-        self.player.attempt_set_movement_effect(None)
-
-        self.assertIsNone(self.player.active_effects.get_movement_effect())
-
-    def test_setting_shot_effect_does_not_alter_movement_slot(self):
-        self.game.switch_state(self.game.playing_state)
-        movement_effect = SpeedBoostEffect(speed_multiplier=2.0)
-        self.player.active_effects.set_movement_effect(movement_effect)
-
-        self.player.attempt_set_shot_effect(DoubleDamageEffect())
-
-        self.assertIs(self.player.active_effects.get_movement_effect(), movement_effect)
-
-    def test_setting_movement_effect_does_not_alter_shot_slot(self):
-        self.game.switch_state(self.game.playing_state)
-        shot_effect = DoubleDamageEffect()
-        self.player.active_effects.set_shot_effect(shot_effect)
-
-        self.player.attempt_set_movement_effect(SpeedBoostEffect(speed_multiplier=1.5))
-
-        self.assertIs(self.player.active_effects.get_shot_effect(), shot_effect)
-
-    def test_second_effect_in_same_category_replaces_first(self):
-        self.game.switch_state(self.game.playing_state)
-        first = DoubleDamageEffect()
-        second = DoubleDamageEffect()
-        self.player.active_effects.set_shot_effect(first)
-
-        self.player.attempt_set_shot_effect(second)
-
-        self.assertIs(self.player.active_effects.get_shot_effect(), second)
-        self.assertIsNot(self.player.active_effects.get_shot_effect(), first)
-
-
-class TestBaseActiveEffect(unittest.TestCase):
-    """Test the base ActiveEffect class."""
-    
-    def test_base_effect_returns_original_shot(self):
-        """Base ActiveEffect returns original ShotIntent."""
-        effect = ActiveEffect()
-        shot = ShotIntent(
-            spec=GLOCK_17,
-            damage=20,
-            bullet_speed=100.0,
-            spread_deg=0.0,
-        )
-        
-        result = effect.modify_shot(shot)
-        self.assertIs(result, shot)
-    
-    def test_base_effect_returns_original_movement(self):
-        """Base ActiveEffect returns original movement."""
-        effect = ActiveEffect()
-        movement = (10, 20)
-        
-        result = effect.modify_movement(movement)
-        self.assertIs(result, movement)
+        move = MoveIntent((0, 0), (10, 20))
+        self.assertIs(self.player.active_effects.modify_movement(move), move)
 
 
 if __name__ == "__main__":
